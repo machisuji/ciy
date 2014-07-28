@@ -1,0 +1,98 @@
+apply plugin: 'scala'
+
+version = '0.1'
+
+ext.scalaVersion = '2.11.2'
+
+task checkJava {
+  def javac = "javac -version".execute()
+
+  if (javac.waitFor() == 0) {
+    if (!javac.err.text.contains('1.7')) {
+      ant.fail("I'm afraid we need Java 7 for this. Point .java-home to a JDK 7, please.")
+    }
+  }
+}
+
+compileJava.dependsOn checkJava
+
+repositories {
+  mavenCentral()
+}
+
+dependencies {
+  compile 'org.scalatra:scalatra_2.11:2.3.0'
+
+  /* >>> wandledi >>> */
+  compile 'javax.servlet:javax.servlet-api:3.1.0' // provided by servlet container
+  compile 'nu.validator.htmlparser:htmlparser:1.4'
+
+  testCompile 'org.testng:testng:5.12.1'
+  testCompile 'org.scalatest:scalatest_2.11:2.2.0'
+  /* <<< wandledi <<< */
+
+  compile "org.scala-lang:scala-library:${scalaVersion}"
+  compile "org.scala-lang:scala-compiler:${scalaVersion}"
+}
+
+sourceSets {
+  main {
+    scala {
+      srcDirs = ['src/main/scala', 'src/ext/wandledi/scala-lib/src/main/scala']
+    }
+
+    java {
+      srcDirs = ['src/ext/wandledi/core/src/main/java']
+    }
+  }
+  test {
+    scala {
+      srcDirs = ['src/test/scala', 'src/ext/wandledi/scala-lib/src/test/scala']
+    }
+
+    java {
+      srcDirs = ['src/test/java', 'src/ext/wandledi/core/src/test/java']
+    }
+  }
+}
+
+/**
+ * Since the war task doesn't work I build my own.
+ * It's not that complicated anway. Still sucks.
+ */
+task war(type: Jar, dependsOn: 'classes') {
+  into('WEB-INF/classes') {
+    from files(sourceSets.main.output.classesDir)
+  }
+
+  into('WEB-INF/lib') {
+    from files(sourceSets.main.compileClasspath)
+    // exclude provided libs
+    exclude '*servlet-api*'
+  }
+
+  from files('src/main/webapp')
+
+  archiveName = 'ciy.war'
+  destinationDir = new java.io.File('build')
+}
+
+task spec(dependsOn: ['testClasses', 'testCore'], type: JavaExec) {
+  main = 'org.scalatest.run'
+  args = ['wandledi.scala.test.ExtSemantics']
+  classpath = sourceSets.test.runtimeClasspath
+}
+
+task testCore(dependsOn: ['testSelectors', 'testSpells'])
+
+task testSelectors(dependsOn: 'testClasses', type: JavaExec) {
+  main = 'org.testng.TestNG'
+  args = ['-testclass', 'wandledi.test.SelectorExperiment'] // wandledi.test.SelectorExperiment,
+  classpath = sourceSets.test.runtimeClasspath
+}
+
+task testSpells(dependsOn: 'testClasses', type: JavaExec) {
+  main = 'org.testng.TestNG'
+  args = ['-testclass', 'wandledi.test.ExtSpellExperiment']
+  classpath = sourceSets.test.runtimeClasspath
+}

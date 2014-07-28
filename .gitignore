@@ -1,0 +1,12 @@
+.java-home
+.gradle
+.DS_Store
+test-output
+build
+
+*~
+*.eml
+*.iml
+*.ipr
+*.iws
+.*.sw?

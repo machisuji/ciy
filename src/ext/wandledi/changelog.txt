@@ -1,0 +1,40 @@
+Wandledi Changelog
+------------------
+
+Note: contains mostly the reasons (changes) for increasing the major versions only
+
+# V0.1
+ -
+
+# V0.2
+ - scala.Element#changeAttribute(String)((String) => String) changed to #changeAttribute(String, (String) => String)
+
+# V0.3
+ - scala.Element replace API changed to:
+   #replace(contentsOnly: Boolean, replacement: xml.NodeSeq)
+   #replace(contentsOnly: Boolean, replacementIntent: (String, Attributes, Spell) => Unit)
+   #replace(contentsOnly: Boolean)(replacement: (String, Attributes) => xml.NodeSeq)
+
+# V0.4
+ - character data sanitizing ('<' -> &lt; etc.)
+ - Spell#writeCharacters and #writeString now include a parameter 'safe' which indicates whether or not the data has to be sanitized
+
+# V0.5
+ - Wandler constructor no longer public; use Wandler#forHTML() and Wandler#forXHTML()
+ - html entities and character references are now left alone (hidden from the SAX parser); still only character references supported for xhtml
+ - added #getWandler() to Spell interface
+
+# V0.6
+ - changed Selectable#get(String, Attribute...) to Selectable#get(String, Attribute, Attribute...) and made analogous changes to $ and $$ in the Scala lib
+ - selector implicits no longer defined in scala.Selectable but in org.wandledi.scala
+
+# V0.7
+ - changed Element#foreachIn's and Element#foreachWithIndexIn's signature to include a third parameter list with the current context (Selectable)
+
+# V0.8
+ - dropped scala.Paragraphs
+
+# V0.9
+ - fixed critical bug (Passage order) which broke Wandledi when using Java 7 instead of Java 6
+ - replaced Wandler#debug with Wandler#dlogLevel
+ - changed signature of scala.Element#includeFile(String)((Selectable) => Unit) to #includeFile(String)(=> Unit)(implicit context: Selectable)
