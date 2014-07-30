@@ -9,6 +9,8 @@ class Dashboard extends CiyStack with Wandlet {
   def httpServletResponse: javax.servlet.http.HttpServletResponse = response // required by Wandlet
 
   get("/") {
+    println("index")
+
     <html>
       <body>
         <h1>Hello, world!</h1>
@@ -18,11 +20,22 @@ class Dashboard extends CiyStack with Wandlet {
   }
 
   get("/hello-wandledi") {
+    println("hello wandledi")
+
     val title = "CIy - A tiny, simple CI server."
-    val content = "Hello Wandledi!"
+    val content = "It is now! " + (new java.util.Date().toString)
     val ip = request.getRemoteAddr
 
     render(HelloWandledi(title, content, ip))
+  }
+
+  post("/bbhook") {
+    println("pbhook")
+
+    val json = scala.util.parsing.json.JSON.parseFull(request.body)
+    println("json: " + json)
+
+    Ok("alright")
   }
 }
 
