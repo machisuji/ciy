@@ -82,10 +82,23 @@ task war(type: Jar, dependsOn: 'classes') {
   destinationDir = new java.io.File('build')
 }
 
-task jetty(dependsOn: 'classes', type: JavaExec) {
+task jettyDev(dependsOn: 'classes', type: JavaExec) {
   main = 'ciy.Server'
   classpath = sourceSets.main.runtimeClasspath
   args = ['src/main/webapp', '-p', 8080, '-c', 'build/classes/main', '-r']
+}
+
+task jettyRun(dependsOn: 'classes', type: JavaExec) {
+  def ctx = "/"
+
+  main = 'ciy.Server'
+  classpath = sourceSets.main.runtimeClasspath
+
+  if (project.hasProperty("context")) {
+    ctx = context
+  }
+
+  args = ['src/main/webapp', '-p', 8080, '-c', 'build/classes/main', '-x', ctx]
 }
 
 task spec(dependsOn: ['testClasses', 'testCore'], type: JavaExec) {

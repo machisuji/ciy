@@ -6,6 +6,7 @@ import org.eclipse.jetty.webapp._
 import java.nio.file._
 import java.nio.file.StandardWatchEventKinds._
 import java.util.concurrent.TimeUnit
+import java.net.InetSocketAddress
 
 object Server {
 
@@ -15,19 +16,20 @@ object Server {
     val classpath = arg("c", "classpath")
     val reload = args.exists(a => a == "-r" || a == "--reload")
     val timeout = arg("t", "timeout").map(_.toLong).getOrElse(11500l)
+    val context = arg("x", "context").getOrElse("/")
 
-    if (classpath.isDefined && reload) runReloadingServer(war, port, classpath.get, timeout)
-    else runServer(war, port, classpath)
+    if (classpath.isDefined && reload) runReloadingServer(war, context, port, classpath.get, timeout)
+    else runServer(war, context, port, classpath)
   }
 
-  def runServer(war: String, port: Int, classpath: Option[String]): Unit = {
-    val srv = server(war, port, classpath)
+  def runServer(war: String, context: String, port: Int, classpath: Option[String]): Unit = {
+    val srv = server(war, context, port, classpath)
 
     srv.start()
     srv.join()
   }
 
-  def runReloadingServer(war: String, port: Int, classpath: String, timeout: Long): Unit = {
+  def runReloadingServer(war: String, context: String, port: Int, classpath: String, timeout: Long): Unit = {
     var srv: org.eclipse.jetty.server.Server = null
 
     onChange(classpath, initialCall = true, timeout = timeout) {
@@ -36,17 +38,17 @@ object Server {
         srv.stop()
       }
 
-      srv = server(war, port, Some(classpath))
+      srv = server(war, context, port, Some(classpath))
       srv.start()
       println("[info] waiting for change in classpath ...")
     }
   }
 
-  def server(war: String, port: Int = 8080, classpath: Option[String] = None) = {
-    val server = new org.eclipse.jetty.server.Server(port)
+  def server(war: String, context: String = "/", port: Int = 8080, classpath: Option[String] = None) = {
+    val server = new org.eclipse.jetty.server.Server(new InetSocketAddress("localhost", port))
     val webapp = new WebAppContext()
 
-    webapp.setContextPath("/")
+    webapp.setContextPath(context)
     webapp.setWar(war)
     classpath.foreach(webapp.setExtraClasspath)
 
