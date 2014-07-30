@@ -22,6 +22,7 @@ repositories {
 
 dependencies {
   compile 'org.scalatra:scalatra_2.11:2.3.0'
+  runtime 'org.slf4j:slf4j-simple:1.7.7'
 
   /* >>> wandledi >>> */
   compile 'javax.servlet:javax.servlet-api:3.1.0' // provided by servlet container
@@ -30,6 +31,9 @@ dependencies {
   testCompile 'org.testng:testng:5.12.1'
   testCompile 'org.scalatest:scalatest_2.11:2.2.0'
   /* <<< wandledi <<< */
+
+  compile 'org.eclipse.jetty:jetty-server:9.2.2.v20140723'
+  compile 'org.eclipse.jetty:jetty-webapp:9.2.2.v20140723'
 
   compile "org.scala-lang:scala-library:${scalaVersion}"
   compile "org.scala-lang:scala-compiler:${scalaVersion}"
@@ -69,12 +73,19 @@ task war(type: Jar, dependsOn: 'classes') {
     from files(sourceSets.main.compileClasspath)
     // exclude provided libs
     exclude '*servlet-api*'
+    exclude '*jetty*'
   }
 
   from files('src/main/webapp')
 
   archiveName = 'ciy.war'
   destinationDir = new java.io.File('build')
+}
+
+task jetty(dependsOn: 'classes', type: JavaExec) {
+  main = 'ciy.Server'
+  classpath = sourceSets.main.runtimeClasspath
+  args = ['src/main/webapp', '-p', 8080, '-c', 'build/classes/main', '-r']
 }
 
 task spec(dependsOn: ['testClasses', 'testCore'], type: JavaExec) {
