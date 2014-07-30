@@ -32,6 +32,9 @@ class Dashboard extends CiyStack with Wandlet {
   post("/bbhook") {
     println("pbhook")
 
+    println("Request: ")
+    println(request.body)
+
     val json = scala.util.parsing.json.JSON.parseFull(request.body)
     println("json: " + json)
 
