@@ -29,17 +29,40 @@ class Dashboard extends CiyStack with Wandlet {
     render(HelloWandledi(title, content, ip))
   }
 
-  post("/bbhook") {
-    println("pbhook")
-
-    println("Request: ")
-    println(request.body)
-
-    val json = scala.util.parsing.json.JSON.parseFull(request.body)
-    println("json: " + json)
-
-    Ok("alright")
+  get("/test") {
+    showFile(CI.testLogFile, "Test Log")
   }
+
+  get("/run") {
+    CI.flushLog()
+    showFile(CI.runLogFile, "Run Log")
+  }
+
+  post("/bbhook") {
+    CI.newRevisionPushed()
+
+    Ok("ok")
+  }
+
+  get("/redeploy") { // ja ja ja das ist alles noch zum Rumspielen
+    CI.newRevisionPushed()
+
+    Ok("ok")
+  }
+
+  def showFile(file: java.io.File, title: String) =
+    <html>
+      <body>
+        <h1>{ title }</h1>
+        {
+          if (CI.testLogFile.exists)
+            io.Source.fromFile(file).getLines.map(
+              line => <div style="width: 100%;"><span>{line}</span></div>)
+          else
+            <p>"no tests run"</p>
+        }
+      </body>
+    </html>
 }
 
 case class HelloWandledi(title: String, content: String, ip: String) extends Page("/hello-wandledi.html") {

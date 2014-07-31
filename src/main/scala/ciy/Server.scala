@@ -9,7 +9,6 @@ import java.util.concurrent.TimeUnit
 import java.net.InetSocketAddress
 
 object Server {
-
   def main(implicit args: Array[String]): Unit = {
     val war = args.head
     val port = arg("p", "port").map(_.toInt).getOrElse(8080)
