@@ -29,6 +29,10 @@ class Dashboard extends CiyStack with Wandlet {
     render(HelloWandledi(title, content, ip))
   }
 
+  get("/pull") {
+    showFile(CI.pullLogFile, "Pull Log")
+  }
+
   get("/test") {
     showFile(CI.testLogFile, "Test Log")
   }
