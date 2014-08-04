@@ -32,11 +32,14 @@ dependencies {
   testCompile 'org.scalatest:scalatest_2.11:2.2.0'
   /* <<< wandledi <<< */
 
+  compile 'org.yaml:snakeyaml:1.13'
+
   compile 'org.eclipse.jetty:jetty-server:9.2.2.v20140723'
   compile 'org.eclipse.jetty:jetty-webapp:9.2.2.v20140723'
 
   compile "org.scala-lang:scala-library:${scalaVersion}"
   compile "org.scala-lang:scala-compiler:${scalaVersion}"
+  compile 'jline:jline:2.12'
 }
 
 sourceSets {
