@@ -3,6 +3,7 @@ package ciy
 import org.scalatra._
 import org.wandledi.wandlet.scala.{Wandlet, Page}
 import org.wandledi.scala._
+import java.io.File
 
 class Dashboard extends CiyStack with Wandlet {
 
@@ -30,16 +31,16 @@ class Dashboard extends CiyStack with Wandlet {
   }
 
   get("/pull") {
-    showFile(CI.pullLogFile, "Pull Log")
+    showFile(CI.pullCommand.logFile.map(new File(_)), "Pull Log")
   }
 
   get("/test") {
-    showFile(CI.testLogFile, "Test Log")
+    showFile(CI.testCommand.logFile.map(new File(_)), "Test Log")
   }
 
   get("/run") {
     CI.flushLog()
-    showFile(CI.runLogFile, "Run Log")
+    showFile(Some(new File(CI.runCommand.logFile)), "Run Log")
   }
 
   post("/bbhook") {
@@ -54,19 +55,21 @@ class Dashboard extends CiyStack with Wandlet {
     Ok("ok")
   }
 
-  def showFile(file: java.io.File, title: String) =
+  def showFile(file: Option[File], title: String) = {
+    val colorCode = "(" + 27.toChar + "\\[\\d+m)"
     <html>
       <body>
         <h1>{ title }</h1>
         {
-          if (CI.testLogFile.exists)
-            io.Source.fromFile(file).getLines.map(
-              line => <div style="width: 100%;"><span>{line}</span></div>)
+          if (file.exists(_.exists))
+            io.Source.fromFile(file.get).getLines.map(
+              line => <div style="width: 100%;"><span>{line.replaceAll(colorCode, "")}</span></div>)
           else
-            <p>"no tests run"</p>
+            <p>"no content"</p>
         }
       </body>
     </html>
+  }
 }
 
 case class HelloWandledi(title: String, content: String, ip: String) extends Page("/hello-wandledi.html") {
