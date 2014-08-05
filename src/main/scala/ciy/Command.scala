@@ -53,7 +53,12 @@ object Command extends Command with Papertrail
 
 case class SimpleCommand(cmd: String, cwd: String = ".", logFile: Option[String]) {
   def run: Int = logFile.map(new File(_)).map { file =>
-    Command.runWithLog(cmd, new File(cwd), file)._1
+    val (ret, logger) = Command.runWithLog(cmd, new File(cwd), file)
+
+    logger.flush()
+    logger.close()
+
+    ret
   }.getOrElse {
     Command.run(cmd, new File(cwd))
   }

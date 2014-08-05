@@ -34,13 +34,16 @@ trait CI {
   }
 
   def pull(): Boolean = {
+    pullCommand.deleteLog()
     pullCommand.run == 0
   }
 
   def test(): Boolean = {
+    testCommand.deleteLog()
     testCommand.run == 0
   }
   def run(): (Process, FileProcessLogger) = {
+    runCommand.deleteLog()
     runCommand.start
   }
 
