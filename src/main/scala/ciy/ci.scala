@@ -67,20 +67,20 @@ object CI extends CI {
   def fail = throw new RuntimeException("Please configure pull, test and run commands.")
 
   val cfg = YAML.fromFile("ciy.yml").getOrElse(YamlMap.empty)
-  val cwd = sys.env.get("CIY_CWD").orElse(cfg.string("cwd")).getOrElse(".")
+  val cwd = sys.env.get("CIY_CWD").orElse(cfg.string("cwd")).orElse(Some("."))
 
   def pullCommand = SimpleCommand(
     cmd = sys.env.get("CIY_PULL_CMD").orElse(cfg.string("pull.cmd")).getOrElse(fail),
-    cwd = sys.env.get("CIY_PULL_CWD").orElse(cwd).getOrElse(fail),
+    cwd = sys.env.get("CIY_PULL_CWD").orElse(cwd).getOrElse("."),
     logFile = Some("pull_output.log"))
 
   def testCommand = SimpleCommand(
     cmd = sys.env.get("CIY_TEST_CMD").orElse(cfg.string("test.cmd")).getOrElse(fail),
-    cwd = sys.env.get("CIY_TEST_CWD").getOrElse(cwd),
+    cwd = sys.env.get("CIY_TEST_CWD").orElse(cwd).getOrElse("."),
     logFile = Some("test_output.log"))
 
   def runCommand = CommandWithLog(
-    cmd = sys.env.get("CIY_RUN_CMD").orElse("run.cmd").getOrElse(fail),
-    cwd = sys.env.get("CIY_RUN_CWD").getOrElse(cwd),
+    cmd = sys.env.get("CIY_RUN_CMD").orElse(cfg.string("run.cmd")).getOrElse(fail),
+    cwd = sys.env.get("CIY_RUN_CWD").orElse(cwd).getOrElse("."),
     logFile = "run_output.log")
 }

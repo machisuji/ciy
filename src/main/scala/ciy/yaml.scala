@@ -56,7 +56,7 @@ object YAML {
   def fromFile(file: String): Option[YamlMap] =
     try Some(fromString(io.Source.fromFile(file).mkString))
     catch {
-      case _: FileNotFoundException => None
+      case _: java.io.FileNotFoundException => None
     }
 
   def fromString(str: String): YamlMap = {
