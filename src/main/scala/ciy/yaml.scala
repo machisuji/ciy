@@ -44,8 +44,20 @@ case class YamlMap(data: Map[String, Any]) {
   override def toString = data.toString.replace("Map", "YamlMap")
 }
 
+object YamlMap {
+  def empty = YamlMap(Map())
+}
+
 object YAML {
-  def fromFile(file: String): YamlMap = fromString(io.Source.fromFile(file).mkString)
+
+  /**
+   * Returns a YamlMap loaded from the given file if the file exists.
+   */
+  def fromFile(file: String): Option[YamlMap] =
+    try Some(fromString(io.Source.fromFile(file).mkString))
+    catch {
+      case _: FileNotFoundException => None
+    }
 
   def fromString(str: String): YamlMap = {
     val yaml = new Yaml()

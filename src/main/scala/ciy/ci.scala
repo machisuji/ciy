@@ -64,20 +64,23 @@ trait CI {
 }
 
 object CI extends CI {
-  val cwd = sys.env.get("CIY_CWD")
+  def fail = throw new RuntimeException("Please configure pull, test and run commands.")
+
+  val cfg = YAML.fromFile("ciy.yml").getOrElse(YamlMap.empty)
+  val cwd = sys.env.get("CIY_CWD").orElse(cfg.string("cwd")).getOrElse(".")
 
   def pullCommand = SimpleCommand(
-    cmd = sys.env.get("CIY_PULL_CMD").getOrElse("echo pull command"),
-    cwd = sys.env.get("CIY_PULL_CWD").orElse(cwd).getOrElse("."),
+    cmd = sys.env.get("CIY_PULL_CMD").orElse(cfg.string("pull.cmd")).getOrElse(fail),
+    cwd = sys.env.get("CIY_PULL_CWD").orElse(cwd).getOrElse(fail),
     logFile = Some("pull_output.log"))
 
   def testCommand = SimpleCommand(
-    cmd = sys.env.get("CIY_TEST_CMD").getOrElse("echo test command"),
-    cwd = sys.env.get("CIY_TEST_CWD").orElse(cwd).getOrElse("."),
+    cmd = sys.env.get("CIY_TEST_CMD").orElse(cfg.string("test.cmd")).getOrElse(fail),
+    cwd = sys.env.get("CIY_TEST_CWD").getOrElse(cwd),
     logFile = Some("test_output.log"))
 
   def runCommand = CommandWithLog(
-    cmd = sys.env.get("CIY_RUN_CMD").getOrElse("echo run command"),
-    cwd = sys.env.get("CIY_RUN_CWD").orElse(cwd).getOrElse("."),
+    cmd = sys.env.get("CIY_RUN_CMD").orElse("run.cmd").getOrElse(fail),
+    cwd = sys.env.get("CIY_RUN_CWD").getOrElse(cwd),
     logFile = "run_output.log")
 }
