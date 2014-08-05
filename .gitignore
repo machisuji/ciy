@@ -11,3 +11,4 @@ ciy.yml
 *.ipr
 *.iws
 .*.sw?
+*.log
