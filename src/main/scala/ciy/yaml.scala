@@ -14,6 +14,7 @@ case class YamlMap(data: Map[String, Any]) {
     tryGet(key, classOf[java.util.LinkedHashMap[String, Any]]).map(m => YamlMap(Map() ++ m.asScala))
 
   def contains(key: String): Boolean = data.contains(key)
+  def keys: Set[String] = data.keys.toSet
 
   /**
    * Tries to get the value for the given key.
