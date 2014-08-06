@@ -1,0 +1,11 @@
+command -v gradle >/dev/null 2>&1 || { echo "I'm afraid you still need to install gradle 2.0 mate." >&2; exit 1; }
+
+if [ -f .java-home ]; then
+  export JAVA_HOME=$(cat .java-home)
+fi
+
+if [ "$1" == "console" ]; then
+  gradle -q scalaConsole
+else
+  gradle $*
+fi
