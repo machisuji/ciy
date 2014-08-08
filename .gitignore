@@ -3,7 +3,7 @@
 .DS_Store
 test-output
 build
-ciy.yml
+.ciy.yml
 
 *~
 *.eml

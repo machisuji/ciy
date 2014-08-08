@@ -73,27 +73,24 @@ trait CI {
 object CI extends CI {
   def fail = throw new RuntimeException("Please configure pull, test and run commands.")
   val cwd = sys.env.get("CIY_CWD").getOrElse(throw new RuntimeException("Please set CIY_CWD."))
-  val cfg = YAML.fromFile(new File(cwd, "ciy.yml").getAbsolutePath).getOrElse(YamlMap.empty)
+  val cfg = YAML.fromFile(new File(cwd, ".ciy.yml").getAbsolutePath).getOrElse(YamlMap.empty)
 
   def pullCommand = SimpleCommand(
-    cmd = cfg.string("pull.cmd").getOrElse(fail),
+    cmd = cfg.string("pull.cmd").orElse(cfg.string("pull")).getOrElse(fail),
     cwd = cfg.string("pull.cwd").getOrElse(cwd),
     logFile = Some("pull_output.log"))
 
   def testCommand = SimpleCommand(
-    cmd = cfg.string("test.cmd").getOrElse(fail),
+    cmd = cfg.string("test.cmd").orElse(cfg.string("test")).getOrElse(fail),
     cwd = cfg.string("test.cwd").getOrElse(cwd),
     logFile = Some("test_output.log"))
 
   def runCommand = CommandWithLog(
-    cmd = cfg.string("run.cmd").getOrElse(fail),
+    cmd = cfg.string("run.cmd").orElse(cfg.string("run")).getOrElse(fail),
     cwd = cfg.string("run.cwd").getOrElse(cwd),
     logFile = "run_output.log")
 
-  override def beforeRunCommands = cfg.map("run.before").map(before =>
-    before.keys.toSeq.flatMap(key => cfg.map(s"run.before.$key")).map(cmd =>
-      SimpleCommand(
-        cmd = cmd.string("cmd").getOrElse(fail),
-        cwd = cmd.string("cwd").getOrElse(cwd),
-        logFile = Some("run_output.log")))).getOrElse(Seq())
+  override def beforeRunCommands = cfg.list[String]("run.before")
+    .map(before => before.map(cmd => SimpleCommand(cmd, cwd, logFile = Some("run_output.log"))))
+    .getOrElse(Seq())
 }

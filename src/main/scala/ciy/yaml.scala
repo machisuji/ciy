@@ -13,6 +13,16 @@ case class YamlMap(data: Map[String, Any]) {
   def map(key: String): Option[YamlMap] =
     tryGet(key, classOf[java.util.LinkedHashMap[String, Any]]).map(m => YamlMap(Map() ++ m.asScala))
 
+  def list[T](key: String)(implicit converter: Converter[Any, T]): Option[List[T]] = {
+    tryGet(key, classOf[java.util.ArrayList[Any]]).flatMap { jlist =>
+      val list: List[Any] = jlist.asScala.toList
+      val result: List[T] = list.flatMap(i => converter(i).toList)
+
+      if (result.isEmpty) None
+      else Some(result)
+    }
+  }
+
   def contains(key: String): Boolean = data.contains(key)
   def keys: Set[String] = data.keys.toSet
 
@@ -65,5 +75,28 @@ object YAML {
     val data = yaml.load(str).asInstanceOf[java.util.Map[String, Any]].asScala
 
     YamlMap(Map() ++ data)
+  }
+}
+
+trait Converter[F, T] {
+  def apply(value: F): Option[T]
+}
+
+object Converter {
+  implicit def string = new StringConverter
+  implicit def int = new IntConverter
+}
+
+class StringConverter extends Converter[Any, String] {
+  def apply(value: Any): Option[String] = value match {
+    case s: java.lang.String => Some(s)
+    case _ => None
+  }
+}
+
+class IntConverter extends Converter[Any, Int] {
+  def apply(value: Any): Option[Int] = value match {
+    case i: java.lang.Integer => Some(i.toInt)
+    case _ => None
   }
 }
