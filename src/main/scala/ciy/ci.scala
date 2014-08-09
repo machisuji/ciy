@@ -90,7 +90,17 @@ object CI extends CI {
     cwd = cfg.string("run.cwd").getOrElse(cwd),
     logFile = "run_output.log")
 
-  override def beforeRunCommands = cfg.list[String]("run.before")
-    .map(before => before.map(cmd => SimpleCommand(cmd, cwd, logFile = Some("run_output.log"))))
-    .getOrElse(Seq())
+  override def beforeRunCommands = {
+    val plainCommands = cfg.list[String]("run.before")
+      .map(before => before.map(cmd => SimpleCommand(cmd, cwd, logFile = Some("run_output.log"))))
+      .getOrElse(Seq())
+    val commandsWithCwd = cfg.list[YamlMap]("run.before")
+      .map(before => before.map(cmd => SimpleCommand(
+        cmd.string("cmd").getOrElse(fail),
+        cmd.string("cwd").getOrElse(fail),
+        Some("run_output.log"))))
+      .getOrElse(Seq())
+
+    plainCommands ++ commandsWithCwd
+  }
 }
