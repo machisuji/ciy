@@ -72,35 +72,52 @@ trait CI {
 
 object CI extends CI {
   def fail = throw new RuntimeException("Please configure pull, test and run commands.")
-  val cwd = sys.env.get("CIY_CWD").getOrElse(throw new RuntimeException("Please set CIY_CWD."))
-  val cfg = YAML.fromFile(new File(cwd, ".ciy.yml").getAbsolutePath).getOrElse(YamlMap.empty)
+  def cwd = sys.env.get("CIY_CWD").getOrElse(throw new RuntimeException("Please set CIY_CWD."))
+  def config = YAML.fromFile(new File(cwd, ".ciy.yml").getAbsolutePath).getOrElse(YamlMap.empty)
 
-  def pullCommand = SimpleCommand(
-    cmd = cfg.string("pull.cmd").orElse(cfg.string("pull")).getOrElse(fail),
-    cwd = cfg.string("pull.cwd").getOrElse(cwd),
-    logFile = Some("pull_output.log"))
+  def pullCommand = {
+    val cfg = config
 
-  def testCommand = SimpleCommand(
-    cmd = cfg.string("test.cmd").orElse(cfg.string("test")).getOrElse(fail),
-    cwd = cfg.string("test.cwd").getOrElse(cwd),
-    logFile = Some("test_output.log"))
+    SimpleCommand(
+      cmd = cfg.string("pull.cmd").orElse(cfg.string("pull")).getOrElse(fail),
+      cwd = cfg.string("pull.cwd").map(expand(_, cwd)).getOrElse(cwd),
+      logFile = Some("pull_output.log"))
+  }
 
-  def runCommand = CommandWithLog(
-    cmd = cfg.string("run.cmd").orElse(cfg.string("run")).getOrElse(fail),
-    cwd = cfg.string("run.cwd").getOrElse(cwd),
-    logFile = "run_output.log")
+  def testCommand = {
+    val cfg = config
+
+    SimpleCommand(
+      cmd = cfg.string("test.cmd").orElse(cfg.string("test")).getOrElse(fail),
+      cwd = cfg.string("test.cwd").map(expand(_, cwd)).getOrElse(cwd),
+      logFile = Some("test_output.log"))
+  }
+
+  def runCommand = {
+    val cfg = config
+
+    CommandWithLog(
+      cmd = cfg.string("run.cmd").orElse(cfg.string("run")).getOrElse(fail),
+      cwd = cfg.string("run.cwd").map(expand(_, cwd)).getOrElse(cwd),
+      logFile = "run_output.log")
+  }
 
   override def beforeRunCommands = {
+    val cfg = config
+
     val plainCommands = cfg.list[String]("run.before")
       .map(before => before.map(cmd => SimpleCommand(cmd, cwd, logFile = Some("run_output.log"))))
       .getOrElse(Seq())
     val commandsWithCwd = cfg.list[YamlMap]("run.before")
       .map(before => before.map(cmd => SimpleCommand(
         cmd.string("cmd").getOrElse(fail),
-        cmd.string("cwd").getOrElse(fail),
+        cmd.string("cwd").map(expand(_, cwd)).getOrElse(fail),
         Some("run_output.log"))))
       .getOrElse(Seq())
 
     plainCommands ++ commandsWithCwd
   }
+
+  private def expand(path: String, cwd: String) =
+    path.replace("($cwd)|(\\.)", cwd.replaceAll("/$", ""))
 }
