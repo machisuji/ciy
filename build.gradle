@@ -63,6 +63,10 @@ sourceSets {
   }
 }
 
+compileScala {
+  scalaCompileOptions.additionalParameters = ["-feature", "-language:implicitConversions"]
+}
+
 /**
  * Since the war task doesn't work I build my own.
  * It's not that complicated anway. Still sucks.
