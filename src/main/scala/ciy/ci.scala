@@ -119,5 +119,5 @@ object CI extends CI {
   }
 
   private def expand(path: String, cwd: String) =
-    path.replace("($cwd)|(\\.)", cwd.replaceAll("/$", ""))
+    path.replaceAll("(\\$cwd)|(\\.)", cwd.replaceAll("/$", ""))
 }
