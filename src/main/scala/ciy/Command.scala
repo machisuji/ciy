@@ -76,17 +76,18 @@ case class CommandWithLog(cmd: String, logFile: String, cwd: String = ".") {
 case class TailingCommand(cmd: String, logFile: String, cwd: String = ".") {
   import java.io._
 
-  val start: Process = {
+  def start: Process = {
     def tail(in: InputStream, out: PrintWriter) = {
-      val reader = new BufferedReader(new InputStreamReader(in))
-      println(s"Tailing `$cmd`")
-      Iterator.continually(reader.readLine).takeWhile(_ ne null).foreach { line =>
-        out.println(line)
-        out.flush()
-        println(s"[tail] $line")
+      try {
+        val reader = new BufferedReader(new InputStreamReader(in))
+        Iterator.continually(reader.readLine).takeWhile(_ ne null).foreach { line =>
+          out.println(line)
+          out.flush()
+          println(s"[tail] $line")
+        }
+      } finally {
+        in.close()
       }
-      println("Command finished")
-      reader.close()
     }
 
     val log = new PrintWriter(new FileWriter(logFile))
