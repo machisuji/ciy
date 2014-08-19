@@ -39,7 +39,6 @@ class Dashboard extends CiyStack with Wandlet {
   }
 
   get("/run") {
-    CI.flushLog()
     showFile(Some(new File(CI.runCommand.logFile)), "Run Log")
   }
 

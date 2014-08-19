@@ -5,17 +5,11 @@ import scala.concurrent.SyncVar
 import java.io.File
 
 trait CI {
-  private val process: SyncVar[(Process, FileProcessLogger)] = new SyncVar
+  private val process: SyncVar[Process] = new SyncVar
 
   def pullCommand: SimpleCommand
   def testCommand: SimpleCommand
-  def runCommand: CommandWithLog
-
-  def flushLog(): Unit = {
-    if (process.isSet) {
-      process.get._2.flush()
-    }
-  }
+  def runCommand: TailingCommand
 
   def newRevisionPushed(): Unit = {
     println("[CI] New revision pushed.")
@@ -24,8 +18,7 @@ trait CI {
       if (pull() && test()) {
         if (process.isSet) {
           println("[CI] Stopping current application ...")
-          process.get._1.destroy()
-          process.get._2.close()
+          process.get.destroy()
           println("[CI] Application stopped")
         }
         run.foreach(process.put)
@@ -42,7 +35,7 @@ trait CI {
     testCommand.deleteLog()
     testCommand.run == 0
   }
-  def run(): Option[(Process, FileProcessLogger)] = {
+  def run(): Option[Process] = {
     runCommand.deleteLog()
     if (beforeRun()) {
       Some(runCommand.start)
@@ -96,7 +89,7 @@ object CI extends CI {
   def runCommand = {
     val cfg = config
 
-    CommandWithLog(
+    TailingCommand(
       cmd = cfg.string("run.cmd").orElse(cfg.string("run")).getOrElse(fail),
       cwd = cfg.string("run.cwd").map(expand(_, cwd)).getOrElse(cwd),
       logFile = "run_output.log")

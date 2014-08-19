@@ -72,3 +72,22 @@ case class CommandWithLog(cmd: String, logFile: String, cwd: String = ".") {
 
   def deleteLog(): Unit = new File(logFile).delete()
 }
+
+case class TailingCommand(cmd: String, logFile: String, cwd: String = ".") {
+  import java.io._
+
+  val start: Process = {
+    def tail(in: InputStream, out: PrintWriter) = {
+      val reader = new BufferedReader(new InputStreamReader(in))
+      Iterator.continually(reader.readLine).takeWhile(_ ne null).foreach(out.println)
+      reader.close()
+    }
+
+    val log = new PrintWriter(new FileWriter(logFile))
+    val pio = new ProcessIO(_ => (), tail(_, log), tail(_, log))
+
+    Process(cmd, new File(cwd)).run(pio)
+  }
+
+  def deleteLog(): Unit = new File(logFile).delete()
+}
