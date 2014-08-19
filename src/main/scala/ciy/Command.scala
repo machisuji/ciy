@@ -79,7 +79,13 @@ case class TailingCommand(cmd: String, logFile: String, cwd: String = ".") {
   val start: Process = {
     def tail(in: InputStream, out: PrintWriter) = {
       val reader = new BufferedReader(new InputStreamReader(in))
-      Iterator.continually(reader.readLine).takeWhile(_ ne null).foreach(out.println)
+      println(s"Tailing `$cmd`")
+      Iterator.continually(reader.readLine).takeWhile(_ ne null).foreach { line =>
+        out.println(line)
+        out.flush()
+        println(s"[tail] $line")
+      }
+      println("Command finished")
       reader.close()
     }
 
