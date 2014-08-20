@@ -7,39 +7,24 @@ import java.io.File
 
 class Dashboard extends CiyStack with Wandlet {
 
+  settings.html5 = true
+
   def httpServletResponse: javax.servlet.http.HttpServletResponse = response // required by Wandlet
 
   get("/") {
-    println("index")
-
-    <html>
-      <body>
-        <h1>Hello, world!</h1>
-        Say <a href="hello-wandledi">hello to Wandledi</a>.
-      </body>
-    </html>
-  }
-
-  get("/hello-wandledi") {
-    println("hello wandledi")
-
-    val title = "CIy - A tiny, simple CI server."
-    val content = "It is now! " + (new java.util.Date().toString)
-    val ip = request.getRemoteAddr
-
-    render(HelloWandledi(title, content, ip))
+    render(Index())
   }
 
   get("/pull") {
-    showFile(new File(CI.pullCommand.logFile), "Pull Log")
+    Index.showFile(new File(CI.pullCommand.logFile))
   }
 
   get("/test") {
-    showFile(new File(CI.testCommand.logFile), "Test Log")
+    Index.showFile(new File(CI.testCommand.logFile))
   }
 
   get("/run") {
-    showFile(new File(CI.runCommand.logFile), "Run Log")
+    Index.showFile(new File(CI.runCommand.logFile))
   }
 
   post("/bbhook") {
@@ -53,28 +38,35 @@ class Dashboard extends CiyStack with Wandlet {
 
     Ok("ok")
   }
-
-  def showFile(file: File, title: String) = {
-    val colorCode = "(" + 27.toChar + "\\[\\d+m)"
-    <html>
-      <body>
-        <h1>{ title }</h1>
-        {
-          if (file.exists)
-            io.Source.fromFile(file).getLines.map(
-              line => <div style="width: 100%;"><span>{line.replaceAll(colorCode, "")}</span></div>)
-          else
-            <p>"no content"</p>
-        }
-      </body>
-    </html>
-  }
 }
 
-case class HelloWandledi(title: String, content: String, ip: String) extends Page("/hello-wandledi.html") {
-  $("title").text = title
-  $("h1").text = title
+case class Index() extends Page("/index.html") {
+  import Index._
 
-  $("#content") insertLast content
-  $("#ip").text = ip
+  val pullLog = new File(CI.pullCommand.logFile)
+  val testLog = new File(CI.testCommand.logFile)
+  val runLog = new File(CI.runCommand.logFile)
+
+  $("title").text = CI.cwd
+  $(".masthead-brand").text = CI.cwd
+
+  $("#last-pull").text = (new java.util.Date(pullLog.lastModified)).toString
+  $("#last-test").text = (new java.util.Date(testLog.lastModified)).toString
+  $("#last-run").text = (new java.util.Date(runLog.lastModified)).toString
+
+  $("#pull-output").replace(contentsOnly = true, showFile(pullLog))
+  $("#test-output").replace(contentsOnly = true, showFile(testLog))
+  $("#run-output").replace(contentsOnly = true, showFile(runLog))
+}
+
+object Index {
+  def showFile(file: File) = {
+    val colorCode = "(" + 27.toChar + "\\[\\d+m)"
+
+    if (file.exists)
+      io.Source.fromFile(file).getLines.toList.map(line =>
+        scala.xml.NodeSeq fromSeq Seq(<span>{line.replaceAll(colorCode, "")}</span>, <br/>)).flatten
+    else
+      <span>"no content"</span>
+  }
 }
