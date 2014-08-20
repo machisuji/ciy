@@ -5,23 +5,26 @@ import scala.concurrent.SyncVar
 import java.io.File
 
 trait CI {
-  private val process: SyncVar[Process] = new SyncVar
+  private val running: SyncVar[RunningCommand] = new SyncVar
 
-  def pullCommand: SimpleCommand
-  def testCommand: SimpleCommand
-  def runCommand: TailingCommand
+  def pullCommand: Command
+  def testCommand: Command
+  def runCommand: Command
 
   def newRevisionPushed(): Unit = {
     println("[CI] New revision pushed.")
 
     threadDo() {
       if (pull() && test()) {
-        if (process.isSet) {
+        if (running.isSet) {
+          val cmd = running.get
+
           println("[CI] Stopping current application ...")
-          process.get.destroy()
+          cmd.process.destroy()
+          cmd.output.close()
           println("[CI] Application stopped")
         }
-        run.foreach(process.put)
+        run.foreach(running.put)
       }
     }
   }
@@ -35,7 +38,7 @@ trait CI {
     testCommand.deleteLog()
     testCommand.run == 0
   }
-  def run(): Option[Process] = {
+  def run(): Option[RunningCommand] = {
     runCommand.deleteLog()
     if (beforeRun()) {
       Some(runCommand.start)
@@ -45,7 +48,7 @@ trait CI {
   }
 
   def beforeRun(): Boolean = !beforeRunCommands.exists(_.run != 0)
-  def beforeRunCommands: Seq[SimpleCommand] = Seq()
+  def beforeRunCommands: Seq[Command] = Seq()
 
   def threadDo(name: String = "", daemon: Boolean = true)(block: => Unit) {
     val run = new Runnable {
@@ -71,25 +74,25 @@ object CI extends CI {
   def pullCommand = {
     val cfg = config
 
-    SimpleCommand(
+    Command(
       cmd = cfg.string("pull.cmd").orElse(cfg.string("pull")).getOrElse(fail),
       cwd = cfg.string("pull.cwd").map(expand(_, cwd)).getOrElse(cwd),
-      logFile = Some("pull_output.log"))
+      logFile = "pull_output.log")
   }
 
   def testCommand = {
     val cfg = config
 
-    SimpleCommand(
+    Command(
       cmd = cfg.string("test.cmd").orElse(cfg.string("test")).getOrElse(fail),
       cwd = cfg.string("test.cwd").map(expand(_, cwd)).getOrElse(cwd),
-      logFile = Some("test_output.log"))
+      logFile = "test_output.log")
   }
 
   def runCommand = {
     val cfg = config
 
-    TailingCommand(
+    Command(
       cmd = cfg.string("run.cmd").orElse(cfg.string("run")).getOrElse(fail),
       cwd = cfg.string("run.cwd").map(expand(_, cwd)).getOrElse(cwd),
       logFile = "run_output.log")
@@ -99,13 +102,13 @@ object CI extends CI {
     val cfg = config
 
     val plainCommands = cfg.list[String]("run.before")
-      .map(before => before.map(cmd => SimpleCommand(cmd, cwd, logFile = Some("run_output.log"))))
+      .map(before => before.map(cmd => Command(cmd, cwd = cwd, logFile = "run_output.log")))
       .getOrElse(Seq())
     val commandsWithCwd = cfg.list[YamlMap]("run.before")
-      .map(before => before.map(cmd => SimpleCommand(
-        cmd.string("cmd").getOrElse(fail),
-        cmd.string("cwd").map(expand(_, cwd)).getOrElse(fail),
-        Some("run_output.log"))))
+      .map(before => before.map(cmd => Command(
+        cmd = cmd.string("cmd").getOrElse(fail),
+        cwd = cmd.string("cwd").map(expand(_, cwd)).getOrElse(fail),
+        logFile = "run_output.log")))
       .getOrElse(Seq())
 
     plainCommands ++ commandsWithCwd

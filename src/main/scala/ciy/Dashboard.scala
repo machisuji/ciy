@@ -31,15 +31,15 @@ class Dashboard extends CiyStack with Wandlet {
   }
 
   get("/pull") {
-    showFile(CI.pullCommand.logFile.map(new File(_)), "Pull Log")
+    showFile(new File(CI.pullCommand.logFile), "Pull Log")
   }
 
   get("/test") {
-    showFile(CI.testCommand.logFile.map(new File(_)), "Test Log")
+    showFile(new File(CI.testCommand.logFile), "Test Log")
   }
 
   get("/run") {
-    showFile(Some(new File(CI.runCommand.logFile)), "Run Log")
+    showFile(new File(CI.runCommand.logFile), "Run Log")
   }
 
   post("/bbhook") {
@@ -54,14 +54,14 @@ class Dashboard extends CiyStack with Wandlet {
     Ok("ok")
   }
 
-  def showFile(file: Option[File], title: String) = {
+  def showFile(file: File, title: String) = {
     val colorCode = "(" + 27.toChar + "\\[\\d+m)"
     <html>
       <body>
         <h1>{ title }</h1>
         {
-          if (file.exists(_.exists))
-            io.Source.fromFile(file.get).getLines.map(
+          if (file.exists)
+            io.Source.fromFile(file).getLines.map(
               line => <div style="width: 100%;"><span>{line.replaceAll(colorCode, "")}</span></div>)
           else
             <p>"no content"</p>
